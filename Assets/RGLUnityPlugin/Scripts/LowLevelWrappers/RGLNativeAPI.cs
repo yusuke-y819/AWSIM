@@ -79,6 +79,11 @@ namespace RGLUnityPlugin
         public static extern int rgl_node_points_write_pcd_file(ref IntPtr node, [MarshalAs(UnmanagedType.LPStr)] string file_path);
 
         [DllImport("RobotecGPULidar")]
+        public static extern int rgl_node_points_ros2_publish_with_qos(
+            ref IntPtr node, [MarshalAs(UnmanagedType.LPStr)] string topic_name, [MarshalAs(UnmanagedType.LPStr)] string frame_id,
+            RGLQosPolicyReliability qos_reliability, RGLQosPolicyDurability qos_durability, RGLQosPolicyHistory qos_history, int qos_depth);
+
+        [DllImport("RobotecGPULidar")]
         public static extern int rgl_graph_run(IntPtr node);
 
         [DllImport("RobotecGPULidar")]
@@ -111,6 +116,10 @@ namespace RGLUnityPlugin
 
         static RGLNativeAPI()
         {
+            string ros2SourcedCodename = Environment.GetEnvironmentVariable("ROS_DISTRO");
+            string ros2BuildType = string.IsNullOrEmpty(ros2SourcedCodename) ? "standalone" : "sourced";
+            Debug.Log($"RGL uses {ros2BuildType} ROS version");
+            
             try
             {
                 CheckVersion();
@@ -303,6 +312,13 @@ namespace RGLUnityPlugin
             CheckErr(rgl_node_points_write_pcd_file(ref node, path));
         }
 
+        public static void NodePointsRos2PublishWithQos(
+            ref IntPtr node, string topicName, string frameId,
+            RGLQosPolicyReliability qos_reliability, RGLQosPolicyDurability qos_durability, RGLQosPolicyHistory qos_history, int qos_depth)
+        {
+            CheckErr(rgl_node_points_ros2_publish_with_qos(ref node, topicName, frameId, qos_reliability, qos_durability, qos_history, qos_depth));
+        }
+
         public static void GraphRun(IntPtr node)
         {
             CheckErr(rgl_graph_run(node));
@@ -348,6 +364,11 @@ namespace RGLUnityPlugin
         public static void GraphNodeRemoveChild(IntPtr parent, IntPtr child)
         {
             CheckErr(rgl_graph_node_remove_child(parent, child));
+        }
+
+        public static void GraphNodeSetActive(IntPtr node, bool active)
+        {
+            CheckErr(rgl_graph_node_set_active(node, active));
         }
 
         public static void GraphDestroy(IntPtr node)
