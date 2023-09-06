@@ -75,6 +75,7 @@ namespace RGLUnityPlugin
         public static ITimeSource TimeSource { get; set; } = new UnityTimeSource();
 
         private int lastUpdateFrame = -1;
+        private int lastPhysicsCycle = -1;
 
         void OnDisable()
         {
@@ -115,7 +116,8 @@ namespace RGLUnityPlugin
         /// <summary>
         /// Find out what changes happened on the scene since the last update and update RGL data.
         /// </summary>
-        public void DoUpdate()
+        /// <param name="physicsCycle">Indicates physics cycle number to enable updating when FixedUpdate is called more frequently than Update.</param>
+        public void DoUpdate(int physicsCycle = 0)
         {
             /* TODO(prybicki):
              * Placing this code in Update() might cause an artifact - only undefined subset of
@@ -128,11 +130,12 @@ namespace RGLUnityPlugin
 
             // The following snippet is a consequence of inability to easily synchronize with LiDAR publishing.
             // TODO: rework it in the future
-            if (lastUpdateFrame == Time.frameCount)
+            if (lastUpdateFrame == Time.frameCount && lastPhysicsCycle == physicsCycle)
             {
-                return; // Already done in this frame 
+                return; // Already done in this frame and physics cycle (FixedUpdate)
             }
 
+            lastPhysicsCycle = physicsCycle;
             lastUpdateFrame = Time.frameCount;
 
             SynchronizeSceneTime();

@@ -91,6 +91,9 @@ namespace RGLUnityPlugin
         private LidarModel? validatedPreset;
         private float timer;
 
+        private int sameFramePhysicsCycleCounter = 0;
+        private int lastUpdateFrame = -1;
+
         public void Awake()
         {
             rglGraphLidar = new RGLNodeSequence()
@@ -174,11 +177,18 @@ namespace RGLUnityPlugin
 
         public void FixedUpdate()
         {
+            if (lastUpdateFrame != Time.frameCount)
+            {
+                sameFramePhysicsCycleCounter = 0;
+                lastUpdateFrame = Time.frameCount;
+            }
+            sameFramePhysicsCycleCounter += 1;
+
             if (AutomaticCaptureHz == 0.0f)
             {
                 return;
             }
-            
+
             timer += Time.deltaTime;
 
             var interval = 1.0f / AutomaticCaptureHz;
@@ -218,7 +228,7 @@ namespace RGLUnityPlugin
 
         public void Capture()
         {
-            sceneManager.DoUpdate();
+            sceneManager.DoUpdate(sameFramePhysicsCycleCounter);
 
             // Set lidar pose
             Matrix4x4 lidarPose = gameObject.transform.localToWorldMatrix * configuration.GetLidarOriginTransfrom();
