@@ -149,6 +149,8 @@ namespace AWSIM
         RenderTexture targetRenderTexture;
         RenderTexture distortedRenderTexture;
 
+        RenderTexture GrayRenderTexture;
+
         [SerializeField] ComputeShader distortionShader;
         [SerializeField] ComputeShader rosImageShader;
 
@@ -208,6 +210,7 @@ namespace AWSIM
             distortionShaderGroupSizeX = ((distortedRenderTexture.width + (int)distortionShaderThreadsPerGroupX - 1) / (int)distortionShaderThreadsPerGroupX);
             distortionShaderGroupSizeY = ((distortedRenderTexture.height + (int)distortionShaderthreadsPerGroupY - 1) / (int)distortionShaderthreadsPerGroupY);
             rosImageShaderGroupSizeX = (((cameraParameters.width * cameraParameters.height) * sizeof(uint)) / ((int)rosImageShaderThreadsPerGroupX * sizeof(uint)));
+            // distortionShader.SetTexture(shaderKernelIdx, "_pre_image", targetRenderTexture);
         }
 
         public void DoRender()
@@ -218,7 +221,12 @@ namespace AWSIM
             // Set data to shader
             UpdateShaderParameters();
             distortionShader.SetTexture(shaderKernelIdx, "_InputTexture", targetRenderTexture);
+            distortionShader.SetTexture(shaderKernelIdx, "_pre_image", GrayRenderTexture);
+
             distortionShader.SetTexture(shaderKernelIdx, "_DistortedTexture", distortedRenderTexture);
+            distortionShader.SetTexture(shaderKernelIdx, "_Output_pre_image", GrayRenderTexture);
+
+
             distortionShader.Dispatch(shaderKernelIdx, distortionShaderGroupSizeX, distortionShaderGroupSizeY, 1);
             rosImageShader.SetTexture(rosShaderKernelIdx, "_InputTexture", distortedRenderTexture);
             rosImageShader.SetBuffer(rosShaderKernelIdx, "_RosImageBuffer", computeBuffer);
@@ -311,6 +319,20 @@ namespace AWSIM
             };
 
             distortedRenderTexture.Create();
+
+            GrayRenderTexture = new RenderTexture(
+                cameraParameters.width, cameraParameters.height, 24, RenderTextureFormat.BGRA32, RenderTextureReadWrite.sRGB)
+            {
+                dimension = TextureDimension.Tex2D,
+                antiAliasing = 1,
+                useMipMap = false,
+                useDynamicScale = false,
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = FilterMode.Bilinear,
+                enableRandomWrite = true
+            };
+
+            GrayRenderTexture.Create();
 
             cameraObject.targetTexture = targetRenderTexture;
         }
